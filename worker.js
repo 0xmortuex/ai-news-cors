@@ -74,7 +74,8 @@ async function handlePassthrough(url) {
 }
 
 async function handleTrendshift() {
-  const cacheKey = new Request("https://trendshift-cache.invalid/v1");
+  // Bump the version segment whenever the response shape changes to force a cache refresh.
+  const cacheKey = new Request("https://trendshift-cache.invalid/v2");
   const cache = caches.default;
 
   const cached = await cache.match(cacheKey);
@@ -161,10 +162,17 @@ function parseTrendshiftHTML(html) {
       title: fullName,
       url: `https://github.com/${fullName}`,
       excerpt: metricBits.join(" · ") || "trending on Trendshift",
-      dateISO: new Date().toISOString(),
+      // dateISO assigned after the loop so we know each item's final rank index
       source: "Trendshift",
       category: "repo",
     });
+  }
+
+  // Stagger timestamps by rank: item[0]=now, item[1]=now-60s, item[2]=now-120s, ...
+  // This preserves Trendshift's internal trending order when the tracker sorts by dateISO desc.
+  const now = Date.now();
+  for (let i = 0; i < items.length; i++) {
+    items[i].dateISO = new Date(now - i * 60_000).toISOString();
   }
 
   return items;
