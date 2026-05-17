@@ -15,12 +15,27 @@
  *   GET /github/discussions   -> recent discussions/issues from key AI repos
  *   GET /guides/aggregate     -> all guide routes merged, deduped, sorted, top 100
  *
+ *   --- Personalization ("Explain for me") ---
+ *   GET /personalize?url=&secret=  -> 5 personalized answers about a guide via
+ *                                     OpenRouter, gated by PERSONALIZE_SECRET,
+ *                                     result-cached 24h, rate limited. See
+ *                                     src/personalize.js.
+ *
  * Normalized item shape:
  *   { title, url, source, published (ISO), summary?, tags?[] }
  *
  * Optional binding: GITHUB_TOKEN (wrangler secret) — raises GitHub rate limits
  * and enables GraphQL Discussions. Falls back gracefully to unauthenticated REST.
+ *
+ * Secrets for /personalize (set via `wrangler secret put`):
+ *   OPENROUTER_API_KEY  — OpenRouter API key (required for /personalize)
+ *   PERSONALIZE_SECRET  — shared secret the client must present (required)
  */
+
+import { handlePersonalize } from "./src/personalize.js";
+// Bundled at deploy time via the [[Text]] rule in wrangler.toml. Private
+// context profile — never returned to clients, only fed to the LLM.
+import MY_CONTEXT from "./src/my-context.md";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -85,6 +100,7 @@ export default {
     const path = url.pathname;
 
     if (path === "/trendshift") return handleTrendshift();
+    if (path === "/personalize") return handlePersonalize(request, env, { contextMd: MY_CONTEXT });
     if (path === "/guides/aggregate") return handleAggregate(env);
     if (path === "/youtube/ai-channels") return cachedRoute("youtube:ai", () => fetchYouTube());
     if (path === "/bluesky/ai-accounts") return cachedRoute("bluesky:ai", () => fetchBluesky());

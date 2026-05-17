@@ -2,13 +2,15 @@
   "name": "ai-news-cors",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Cloudflare Worker: CORS passthrough proxy + Trendshift trending-repo scraper for ai-news-tracker.",
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
-    "test": "node --test test/"
+    "test": "node --test test/",
+    "test:personalize": "node --test test/personalize.test.mjs"
   },
   "devDependencies": {
-    "wrangler": "^3.80.0"
+    "wrangler": "^4.92.0"
   }
 }

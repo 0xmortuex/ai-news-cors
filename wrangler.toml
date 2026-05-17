@@ -1,3 +1,10 @@
 name = "ai-news-cors"
 main = "worker.js"
 compatibility_date = "2026-04-30"
+
+# Bundle src/my-context.md as a string import (the /personalize context
+# profile). `import MY_CONTEXT from "./src/my-context.md"` resolves to the
+# file's text at deploy time — no runtime file access, no extra setup.
+rules = [
+  { type = "Text", globs = ["**/*.md"], fallthrough = true }
+]
