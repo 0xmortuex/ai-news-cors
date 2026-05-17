@@ -143,7 +143,9 @@ async function cachedRoute(key, producer, ttl = GUIDE_CACHE_TTL) {
 // AGGREGATE — calls every guide route in parallel, dedupes, sorts, top 100
 // =========================================================================
 async function handleAggregate(env) {
-  return cachedRoute("guides:aggregate", async () => {
+  // Bump the version segment whenever the aggregation logic changes,
+  // so a new deploy isn't shadowed by the 15-minute edge cache.
+  return cachedRoute("guides:aggregate:v2", async () => {
     const tasks = [
       ...Object.values(BLOG_FEEDS).map((d) => () => fetchRSSItems(d.url, d.source, d.tags)),
       () => fetchYouTube(),
@@ -158,15 +160,31 @@ async function handleAggregate(env) {
       if (s.status === "fulfilled" && Array.isArray(s.value)) all.push(...s.value);
     }
 
+    // Dedupe by URL, then sort newest-first.
     const byUrl = new Map();
     for (const it of all) {
       const k = (it.url || "").trim();
       if (k && !byUrl.has(k)) byUrl.set(k, it);
     }
+    const sorted = Array.from(byUrl.values()).sort(
+      (a, b) => new Date(b.published) - new Date(a.published)
+    );
 
-    return Array.from(byUrl.values())
-      .sort((a, b) => new Date(b.published) - new Date(a.published))
-      .slice(0, 100);
+    // Diversity cap: GitHub `pushed_at` and dev.to volume are always fresh, so
+    // a raw date-sort top-100 would be ~all GitHub + dev.to and bury blogs,
+    // YouTube and Bluesky. Cap each `source` so the top 100 stays diverse
+    // (still newest-first within each source).
+    const PER_SOURCE_CAP = 12;
+    const counts = Object.create(null);
+    const out = [];
+    for (const it of sorted) {
+      if (out.length >= 100) break;
+      const src = it.source || "unknown";
+      counts[src] = (counts[src] || 0) + 1;
+      if (counts[src] > PER_SOURCE_CAP) continue;
+      out.push(it);
+    }
+    return out;
   });
 }
 
