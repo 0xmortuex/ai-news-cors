@@ -25,9 +25,9 @@ const CORS_HEADERS = {
 const POLITE_UA =
   "Mozilla/5.0 (compatible; AINewsTracker/1.0; +https://0xmortuex.github.io/ai-news-tracker/)";
 
-// Gemini Flash 1.5 — chosen over gpt-4o-mini: ~$0.075/M input vs $0.15/M,
-// and faster. One click is ~1.3k input + ~0.35k output tokens ≈ $0.0002.
-export const PERSONALIZE_MODEL = "google/gemini-flash-1.5";
+// Gemini 2.5 Flash Lite (GA) — $0.10/M input + $0.40/M output, 1M context.
+// One click is ~1.3k input + ~0.45k output tokens ≈ $0.0003.
+export const PERSONALIZE_MODEL = "google/gemini-2.5-flash-lite";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const MAX_GUIDE_CHARS = 2000; // truncate guide content before the LLM call
